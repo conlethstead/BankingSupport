@@ -1,0 +1,9 @@
+pyautogen==0.7.6
+python-dotenv==1.0.1
+pydantic==2.10.6
+langchain-openai>=0.2.0
+langchain-core>=0.3.0
+langgraph>=0.2.0
+langchain==0.3.19
+streamlit==1.41.1
+sqlalchemy>=2.0.0
