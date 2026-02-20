@@ -1,6 +1,6 @@
 """
 Banking Customer Support AI - Database Setup and Management
-Uses SQLite for simplicity and portability
+Supports SQLite (local) and PostgreSQL (Cloud SQL for production)
 """
 
 import os
@@ -10,12 +10,40 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 import json
 
-# Database configuration
-DB_PATH = os.path.join(os.path.dirname(__file__), "banking_support.db")
-DATABASE_URL = f"sqlite:///{DB_PATH}"
 
-# Create engine and base
-engine = create_engine(DATABASE_URL, echo=False)
+def get_database_url():
+    """
+    Get database URL from environment or default to local SQLite.
+    
+    For Cloud SQL PostgreSQL, set DATABASE_URL environment variable:
+    - Direct connection: postgresql://user:pass@host:port/dbname
+    - Unix socket (Cloud Run): postgresql://user:pass@/dbname?host=/cloudsql/PROJECT:REGION:INSTANCE
+    """
+    database_url = os.environ.get("DATABASE_URL")
+    
+    if database_url:
+        return database_url
+    
+    # Default to local SQLite for development
+    db_path = os.path.join(os.path.dirname(__file__), "banking_support.db")
+    return f"sqlite:///{db_path}"
+
+
+DATABASE_URL = get_database_url()
+DB_PATH = DATABASE_URL.replace("sqlite:///", "") if DATABASE_URL.startswith("sqlite") else None
+
+# Create engine with appropriate settings
+if DATABASE_URL.startswith("postgresql"):
+    engine = create_engine(
+        DATABASE_URL,
+        echo=False,
+        pool_size=5,
+        max_overflow=10,
+        pool_pre_ping=True,
+    )
+else:
+    engine = create_engine(DATABASE_URL, echo=False)
+
 Base = declarative_base()
 SessionLocal = sessionmaker(bind=engine)
 
@@ -85,7 +113,10 @@ class SessionHistory(Base):
 def init_db():
     """Initialize the database - create all tables"""
     Base.metadata.create_all(engine)
-    print(f"✓ Database initialized at {DB_PATH}")
+    if DB_PATH:
+        print(f"✓ Database initialized at {DB_PATH}")
+    else:
+        print("✓ Database initialized (PostgreSQL)")
     return engine, SessionLocal
 
 

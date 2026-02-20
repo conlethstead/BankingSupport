@@ -1,0 +1,34 @@
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Local database (will use Cloud SQL in production)
+*.db
+db/*.db
+
+# Tests
+tests/
+
+# Misc
+*.zip
+*.md
+!requirements.txt
+.env
+.env.*

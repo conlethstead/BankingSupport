@@ -4,8 +4,10 @@ Common queries and operations
 """
 
 from datetime import datetime, timedelta
-from .database import get_session, SupportTicket, InteractionLog, SessionHistory
+import json
 import random
+from sqlalchemy import func
+from .database import get_session, SupportTicket, InteractionLog, SessionHistory
 from langchain.tools import tool
 
 
@@ -78,8 +80,8 @@ class TicketManager:
         session.close()
 
     @staticmethod
-    def list_tickets(status=None, customer_id=None, limit=10):
-        """List tickets with optional filters"""
+    def list_tickets(status=None, customer_id=None, customer_name=None, limit=10):
+        """List tickets with optional filters. customer_name is partial, case-insensitive match."""
         session = get_session()
         query = session.query(SupportTicket)
         
@@ -87,6 +89,12 @@ class TicketManager:
             query = query.filter_by(status=status)
         if customer_id:
             query = query.filter_by(customer_id=customer_id)
+        if customer_name and customer_name.strip():
+            name = customer_name.strip().lower()
+            query = query.filter(
+                SupportTicket.customer_name.isnot(None),
+                func.lower(SupportTicket.customer_name).like(f"%{name}%"),
+            )
         
         tickets = query.order_by(SupportTicket.created_at.desc()).limit(limit).all()
         session.close()
@@ -165,6 +173,22 @@ class LogManager:
         return logs
 
     @staticmethod
+    def get_logs_by_ids(log_ids):
+        """Get interaction logs by a list of log IDs. Returns list in ID order."""
+        if not log_ids:
+            return []
+        session = get_session()
+        logs = (
+            session.query(InteractionLog)
+            .filter(InteractionLog.log_id.in_(log_ids))
+            .all()
+        )
+        session.close()
+        # Preserve order of log_ids
+        by_id = {log.log_id: log for log in logs}
+        return [by_id[i] for i in log_ids if i in by_id]
+
+    @staticmethod
     def get_stats(days=7):
         """Get interaction statistics for the last N days"""
         session = get_session()
@@ -215,16 +239,28 @@ class SessionManager:
 
     @staticmethod
     def get_session_history(session_id):
-        """Retrieve a session"""
+        """Retrieve a session by id."""
         session = get_session()
         hist = session.query(SessionHistory).filter_by(session_id=session_id).first()
         session.close()
         return hist
 
     @staticmethod
+    def list_sessions(limit=20):
+        """List recent sessions (most recently accessed first)."""
+        session = get_session()
+        rows = (
+            session.query(SessionHistory)
+            .order_by(SessionHistory.last_accessed.desc())
+            .limit(limit)
+            .all()
+        )
+        session.close()
+        return rows
+
+    @staticmethod
     def update_session_context(session_id, context_dict):
         """Update session context"""
-        import json
         session = get_session()
         hist = session.query(SessionHistory).filter_by(session_id=session_id).first()
         if hist:
@@ -232,6 +268,24 @@ class SessionManager:
             hist.last_accessed = datetime.utcnow()
             session.commit()
         session.close()
+
+    @staticmethod
+    def add_interaction_to_session(session_id, customer_id, log_id):
+        """Append an interaction log ID to a session. Creates the session if it does not exist."""
+        db_session = get_session()
+        hist = db_session.query(SessionHistory).filter_by(session_id=session_id).first()
+        if not hist:
+            db_session.close()
+            SessionManager.create_session(session_id, customer_id)
+            db_session = get_session()
+            hist = db_session.query(SessionHistory).filter_by(session_id=session_id).first()
+        if hist:
+            logs_list = json.loads(hist.interaction_logs_json or "[]")
+            logs_list.append(log_id)
+            hist.interaction_logs_json = json.dumps(logs_list)
+            hist.last_accessed = datetime.utcnow()
+            db_session.commit()
+        db_session.close()
 
 
 if __name__ == "__main__":

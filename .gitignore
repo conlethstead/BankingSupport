@@ -1,0 +1,43 @@
+venv/
+.venv/
+.vscode/
+__pycache__/
+*.py[cod]
+*.so
+
+# Environment files (contain secrets)
+.env
+.env.local
+.env.production
+
+# Database (local SQLite)
+*.db
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Archives
+*.zip
+
+# Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Byte-compiled
+*.pyc

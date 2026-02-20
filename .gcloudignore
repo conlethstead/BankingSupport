@@ -1,0 +1,22 @@
+# Git
+.git/
+.gitignore
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# IDE
+.vscode/
+.idea/
+
+# Local files
+*.db
+*.zip
+tests/
+.env
