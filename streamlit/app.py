@@ -184,6 +184,14 @@ st.markdown("""
 
 
 @st.cache_resource
+def init_database():
+    """Initialize database tables on first run."""
+    from db.database import init_db
+    init_db()
+    return True
+
+
+@st.cache_resource
 def get_workflow():
     """Build and cache the compiled workflow."""
     from workflow.workflow import build_workflow
@@ -231,6 +239,9 @@ def load_session_history(session_id):
 
 
 def main():
+    # Initialize database tables on startup (creates tables if they don't exist)
+    init_database()
+    
     # Session state for history, last result, and DB session (for SessionManager)
     if "history" not in st.session_state:
         st.session_state.history = []

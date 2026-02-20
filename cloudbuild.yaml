@@ -26,7 +26,7 @@ steps:
       - '--memory'
       - '1Gi'
       - '--set-secrets'
-      - 'PAID_OPENAI_API_KEY=PAID_OPENAI_API_KEY:latest'
+      - 'PAID_OPENAI_API_KEY=PAID_OPENAI_API_KEY:latest,DATABASE_URL=DATABASE_URL:latest'
       - '--labels'
       - 'environment=development'
 
